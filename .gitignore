@@ -1,0 +1,36 @@
+# Qt / CMake build directories
+build/
+build-*/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Qt generated files
+*.user
+*.user.*
+moc_*
+ui_*
+qrc_*
+
+# Object / binary files
+*.o
+*.obj
+*.exe
+*.dll
+*.a
+
+# Debug / temporary files
+*.log
+*.tmp
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+Desktop.ini
