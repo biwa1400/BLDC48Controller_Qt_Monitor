@@ -18,6 +18,7 @@ qt_add_executable(motor
     WIN32
 
     main.cpp
+    app_icon.rc
 
     mainwindow.cpp
     mainwindow.h
