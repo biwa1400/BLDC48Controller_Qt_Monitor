@@ -9,6 +9,9 @@ struct DataFrame
     // I1 ~ I22
     std::array<int16_t, 22> currents{};
 
+    // FIR filtered ADC samples (F1 ~ F22).
+    std::array<int16_t, 22> filteredCurrents{};
+
     int16_t rpm = 0;
 
     uint16_t vsRho = 0;

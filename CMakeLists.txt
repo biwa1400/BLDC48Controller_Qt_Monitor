@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.16)
 
 project(motor VERSION 0.1 LANGUAGES CXX)
@@ -24,15 +25,33 @@ qt_add_executable(motor
     mainwindow.h
     mainwindow.ui
 
+    livevalueswindow.cpp
+    livevalueswindow.h
+    livevalueswindow.ui
+
     dataframe.h
 
     dataparser.cpp
     dataparser.h
 
     datacache.h
+
     recordfiledialog.h
     recorddatasource.h
     recorddatasource.cpp
+
+    lutcsvparser.h
+    lutcsvparser.cpp
+
+    lutbinarywriter.h
+    lutbinarywriter.cpp
+
+    lutmanagerdialog.h
+    lutmanagerdialog.cpp
+    lutremoteclient.h
+    lutremoteclient.cpp
+    lutremotebrowser.h
+    lutremotebrowser.cpp
 )
 
 target_link_libraries(motor

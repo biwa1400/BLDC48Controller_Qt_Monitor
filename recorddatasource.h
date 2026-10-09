@@ -14,7 +14,7 @@
 class RecordDataSource
 {
 public:
-    static constexpr qint64 FRAME_SIZE_BYTES = 60;
+    static constexpr qint64 FRAME_SIZE_BYTES = 112;
     static constexpr qint64 MAX_DIRECT_FRAMES = 20000;
 
     struct SampledFrame

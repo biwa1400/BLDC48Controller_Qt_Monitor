@@ -8,6 +8,12 @@
 #include <QString>
 
 #include <vector>
+#include <array>
+
+class QCheckBox;
+class QLabel;
+class QPushButton;
+class LiveValuesWindow;
 
 #include <QChart>
 #include <QChartView>
@@ -392,6 +398,8 @@ private:
     void connectDataStream();
     void disconnectDataStream();
     void enterLiveMode();
+    void openLutManager();
+    void setCurrentFpgaLutName(const QString &fileName);
 
     void openRecordForDisplay(
         const QString &localFile);
@@ -430,6 +438,11 @@ private:
     QTimer *displayTimer;
     QTimer *statisticsTimer;
     QTimer *recordLoadTimer;
+    QTimer *currentValueTimer;
+
+    LiveValuesWindow *liveValuesWindow = nullptr;
+    QPushButton *lutManagerButton = nullptr;
+    QLabel *currentFpgaLutLabel = nullptr;
 
     quint64 receivedBytes = 0;
     quint64 receivedFrames = 0;
@@ -442,6 +455,14 @@ private:
     QLineSeries *i1Series = nullptr;
     QLineSeries *i2Series = nullptr;
     QLineSeries *i3Series = nullptr;
+
+    static constexpr std::size_t CURRENT_CHANNEL_COUNT = 22;
+
+    std::array<QLineSeries *, CURRENT_CHANNEL_COUNT> currentSeries{};
+    std::array<QLineSeries *, CURRENT_CHANNEL_COUNT> filterSeries{};
+    std::array<QCheckBox *, CURRENT_CHANNEL_COUNT> currentChannelChecks{};
+    std::array<QCheckBox *, CURRENT_CHANNEL_COUNT> filterChannelChecks{};
+    std::array<QLabel *, CURRENT_CHANNEL_COUNT> currentValueLabels{};
 
     QValueAxis *currentAxisX = nullptr;
     QValueAxis *currentAxisY = nullptr;

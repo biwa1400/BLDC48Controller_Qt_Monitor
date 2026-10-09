@@ -208,7 +208,7 @@ bool RecordDataSource::locateFirstFrame()
         }
 
         // If another complete frame is available in the probe,
-        // verify the expected fixed 60-byte spacing as well.
+        // verify the expected fixed 112-byte spacing as well.
         const qint64 nextOffset =
             offset +
             FRAME_SIZE_BYTES;
@@ -230,7 +230,7 @@ bool RecordDataSource::locateFirstFrame()
     }
 
     m_lastError =
-        "Could not locate a valid 60-byte Record frame in the first 1 MB.";
+        "Could not locate a valid 112-byte Record frame in the first 1 MB.";
 
     return false;
 }
