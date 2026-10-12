@@ -14,7 +14,6 @@ std::vector<DataFrame> DataParser::appendData(const QByteArray &data)
     const QByteArray frameEnd("ed", 2);
 
     std::vector<DataFrame> parsedFrames;
-    static quint64 validFrames = 0;
     static quint64 badEnds = 0;
 
     while (true) {
@@ -62,20 +61,6 @@ std::vector<DataFrame> DataParser::appendData(const QByteArray &data)
         frame.phaseAdv = qFromLittleEndian<quint16>(p + 98);
         frame.dtc = qFromLittleEndian<quint16>(p + 100);
         frame.degree = qFromLittleEndian<quint32>(p + 92);
-
-        ++validFrames;
-        if (validFrames <= 5 || validFrames % 1000 == 0) {
-            qDebug().noquote()
-            << "[DMA RX] frame=" << validFrames
-            << "rpm=" << frame.rpm
-            << "rpmRaw=" << payload.mid(88, 4).toHex(' ')
-            << "encoder=" << frame.degree
-            << "encoderRaw=" << payload.mid(92, 4).toHex(' ')
-            << "vsRho=" << frame.vsRho
-            << "phaseAdv=" << frame.phaseAdv
-            << "dtc=" << frame.dtc
-            << "padding=" << payload.mid(102, 6).toHex(' ');
-        }
 
         parsedFrames.push_back(frame);
         buffer.remove(0, FRAME_SIZE);

@@ -52,6 +52,8 @@ qt_add_executable(motor
     lutremoteclient.cpp
     lutremotebrowser.h
     lutremotebrowser.cpp
+    thdmonitorwindow.h
+    thdmonitorwindow.cpp
 )
 
 target_link_libraries(motor

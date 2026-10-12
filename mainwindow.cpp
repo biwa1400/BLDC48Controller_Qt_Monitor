@@ -3,6 +3,7 @@
 #include "recordfiledialog.h"
 #include "recorddatasource.h"
 #include "livevalueswindow.h"
+#include "thdmonitorwindow.h"
 #include "lutremotebrowser.h"
 
 #include <QDebug>
@@ -133,12 +134,33 @@ MainWindow::MainWindow(
     currentFpgaLutLabel->setToolTip(
         "The active LUT is not yet reported by ARM Linux.");
 
-    ui->statusLayout->insertWidget(pauseIndex + 2, lutManagerButton);
-    ui->statusLayout->insertWidget(pauseIndex + 3, lutStatusTitle);
-    ui->statusLayout->insertWidget(pauseIndex + 4, currentFpgaLutLabel);
+    ui->statusLayout->insertWidget(pauseIndex + 3, lutManagerButton);
+    ui->statusLayout->insertWidget(pauseIndex + 4, lutStatusTitle);
+    ui->statusLayout->insertWidget(pauseIndex + 5, currentFpgaLutLabel);
 
     connect(lutManagerButton, &QPushButton::clicked,
             this, &MainWindow::openLutManager);
+
+    // THD Monitor: an independent TCP connection, active only while open.
+    auto *thdMonitorButton = new QPushButton("THD Monitor", this);
+    thdMonitorButton->setMinimumSize(110, 30);
+    thdMonitorButton->setStyleSheet(
+        "QPushButton { font-weight: bold; padding: 4px 12px; }");
+    ui->statusLayout->insertWidget(pauseIndex + 2, thdMonitorButton);
+
+    connect(thdMonitorButton, &QPushButton::clicked, this, [this]() {
+        if (!thdMonitorWindow) {
+            thdMonitorWindow = new ThdMonitorWindow(
+                QStringLiteral("192.168.7.2"), nullptr);
+            thdMonitorWindow->setAttribute(Qt::WA_DeleteOnClose, true);
+            connect(thdMonitorWindow, &QObject::destroyed, this, [this]() {
+                thdMonitorWindow = nullptr;
+            });
+        }
+        thdMonitorWindow->show();
+        thdMonitorWindow->raise();
+        thdMonitorWindow->activateWindow();
+    });
 
     // =========================================================
     // Live Values window
@@ -2386,5 +2408,6 @@ void MainWindow::disconnectDataStream()
 
 MainWindow::~MainWindow()
 {
+    delete thdMonitorWindow;
     delete ui;
 }

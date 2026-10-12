@@ -14,6 +14,7 @@ class QCheckBox;
 class QLabel;
 class QPushButton;
 class LiveValuesWindow;
+class ThdMonitorWindow;
 
 #include <QChart>
 #include <QChartView>
@@ -441,6 +442,7 @@ private:
     QTimer *currentValueTimer;
 
     LiveValuesWindow *liveValuesWindow = nullptr;
+    ThdMonitorWindow *thdMonitorWindow = nullptr;
     QPushButton *lutManagerButton = nullptr;
     QLabel *currentFpgaLutLabel = nullptr;
 
