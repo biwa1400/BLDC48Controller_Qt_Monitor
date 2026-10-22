@@ -54,6 +54,22 @@ qt_add_executable(motor
     lutremotebrowser.cpp
     thdmonitorwindow.h
     thdmonitorwindow.cpp
+    firmwareupgradedialog.h
+    firmwareupgradedialog.cpp
+    sshclient.h
+    sshclient.cpp
+    devicemaintenancewindow.h
+    devicemaintenancewindow.cpp
+    patchmanager.h
+    patchmanager.cpp
+    filetransferclient.h
+    filetransferclient.cpp
+    patchinstaller.h
+    patchinstaller.cpp
+    patchzipimporter.h
+    patchzipimporter.cpp
+    mosfetcontrolwindow.h
+    mosfetcontrolwindow.cpp
 )
 
 target_link_libraries(motor

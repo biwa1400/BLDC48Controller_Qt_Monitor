@@ -138,9 +138,12 @@ void LiveValuesWindow::updateValues(
             continue;
         }
 
-        currentLabels[channel]->setText(
-            QString::number(
-                frame.currents[channel]));
+        const auto peak = frame.currents[channel];
+        currentLabels[channel]->setText(QString::number(peak));
+
+        // Red for zero peak current; normal text color otherwise.
+        currentLabels[channel]->setStyleSheet(
+            peak == 0 ? QStringLiteral("color: #E53935;") : QString());
     }
 
     if (rpmLabel) {

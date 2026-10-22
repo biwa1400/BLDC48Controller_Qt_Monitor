@@ -5,6 +5,9 @@
 #include "livevalueswindow.h"
 #include "thdmonitorwindow.h"
 #include "lutremotebrowser.h"
+#include "firmwareupgradedialog.h"
+#include "devicemaintenancewindow.h"
+#include "mosfetcontrolwindow.h"
 
 #include <QDebug>
 #include <QPainter>
@@ -27,6 +30,9 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QElapsedTimer>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
 
 #include <algorithm>
 #include <cmath>
@@ -51,6 +57,54 @@ MainWindow::MainWindow(
           new QTimer(this))
 {
     ui->setupUi(this);
+
+    // RPM is still available as a numeric value in Live Values, but its
+    // separate plot is not needed. Reclaim its entire area for ADC/FIR.
+    ui->rpmGroupBox->hide();
+    ui->currentGroupBox->setMinimumHeight(0);
+
+    // Standard application menus. Reserved menus intentionally have no actions yet.
+    menuBar()->addMenu(tr("&File"));
+    menuBar()->addMenu(tr("&View"));
+
+    // Firmware upload is independent of the live TCP data stream.
+    auto *toolsMenu = menuBar()->addMenu(tr("&Tools"));
+    auto *upgradeFirmwareAction = toolsMenu->addAction(tr("Upgrade Motor Firmware..."));
+    connect(upgradeFirmwareAction, &QAction::triggered, this, [this]() {
+        FirmwareUpgradeDialog dialog(this);
+        dialog.exec();
+    });
+
+    toolsMenu->addSeparator();
+    auto *deviceMaintenanceAction = toolsMenu->addAction(tr("Device Maintenance..."));
+    connect(deviceMaintenanceAction, &QAction::triggered, this, [this]() {
+        DeviceMaintenanceWindow dialog(this);
+        dialog.exec();
+    });
+
+    toolsMenu->addSeparator();
+    auto *mosfetControlAction = toolsMenu->addAction(tr("MOSFET Output Control..."));
+    connect(mosfetControlAction, &QAction::triggered, this, [this]() {
+        MosfetControlWindow dialog(this);
+        dialog.exec();
+    });
+
+    menuBar()->addMenu(tr("&Settings"));
+    auto *helpMenu = menuBar()->addMenu(tr("&Help"));
+    auto *aboutAction = helpMenu->addAction(tr("About BLDC48 Motor Monitor..."));
+    connect(aboutAction, &QAction::triggered, this, [this]() {
+        QMessageBox::about(
+            this,
+            tr("About BLDC48 Motor Monitor"),
+            QStringLiteral(
+                "<h3>BLDC48 Motor Monitor</h3>"
+                "<p><b>Version:</b> 2.1.0</p>"
+                "<p>Real-time monitoring, control, and harmonic analysis "
+                "software for BLDC motor systems.</p>"
+                "<p><b>Author:</b> Bin Wang<br>"
+                "<b>Framework:</b> Qt 6 / C++<br>"
+                "<b>Platform:</b> Windows x64</p>"));
+    });
 
 
     // =========================================================
@@ -722,10 +776,8 @@ MainWindow::MainWindow(
 
                 series->setVisible(checked);
 
-                if (!checked) {
-                    // Release all plotted point memory immediately.
-                    series->clear();
-                }
+                // Preserve the plotted points while hidden, so toggling a
+                // channel back on during Pause restores the frozen waveform.
 
                 // Record mode is not refreshed by the 20 ms live
                 // timer.  Force the visible Record range to reload
@@ -761,7 +813,7 @@ MainWindow::MainWindow(
                 {
                     auto *series = filterSeries[channel];
                     series->setVisible(checked);
-                    if (!checked) series->clear();
+                    // Preserve points when hidden for Pause-time toggling.
                     if (recordMode) {
                         loadedRecordFirstFrame = -1;
                         loadedRecordLastFrame = -1;
@@ -847,125 +899,6 @@ MainWindow::MainWindow(
                 recordLoadTimer->start();
             }
         });
-
-
-    // =========================================================
-    // LM10 RPM chart
-    // =========================================================
-
-    rpmSeries =
-        new QLineSeries(this);
-
-
-    rpmSeries->setName(
-        "LM10 RPM");
-
-
-    rpmSeries->setPen(
-        QPen(
-            QColor("#9C27B0"),
-            2.0));
-
-
-    rpmChart =
-        new QChart();
-
-
-    rpmChart->addSeries(
-        rpmSeries);
-
-
-    rpmChart->setTitle("");
-
-
-    rpmChart
-        ->legend()
-        ->setVisible(false);
-
-
-    rpmChart->setMargins(
-        QMargins(
-            5,
-            5,
-            5,
-            5));
-
-
-    // =========================================================
-    // RPM axes
-    // =========================================================
-
-    rpmAxisX =
-        new QValueAxis();
-
-    rpmAxisY =
-        new QValueAxis();
-
-
-    rpmAxisX->setTitleText(
-        "Time (s)");
-
-    rpmAxisY->setTitleText(
-        "RPM");
-
-
-    rpmAxisX->setRange(
-        -5.0,
-        0.0);
-
-    rpmAxisX->setTickCount(6);
-
-    rpmAxisX->setLabelFormat(
-        "%.1f");
-
-
-    rpmAxisY->setRange(
-        -100.0,
-        100.0);
-
-    rpmAxisY->setTickCount(6);
-
-    rpmAxisY->setLabelFormat(
-        "%.0f");
-
-
-    rpmChart->addAxis(
-        rpmAxisX,
-        Qt::AlignBottom);
-
-    rpmChart->addAxis(
-        rpmAxisY,
-        Qt::AlignLeft);
-
-
-    rpmSeries->attachAxis(
-        rpmAxisX);
-
-    rpmSeries->attachAxis(
-        rpmAxisY);
-
-
-    // =========================================================
-    // RPM chart view
-    // =========================================================
-
-    rpmChartView =
-        new QChartView(
-            rpmChart);
-
-
-    rpmChartView->setSizePolicy(
-        QSizePolicy::Expanding,
-        QSizePolicy::Expanding);
-
-
-    rpmChartView->setRenderHint(
-        QPainter::Antialiasing,
-        false);
-
-
-    ui->rpmChartLayout->addWidget(
-        rpmChartView);
 
 
     // =========================================================
@@ -1417,11 +1350,8 @@ MainWindow::MainWindow(
             const std::size_t visibleCount = visibleEnd - visibleFirst;
             std::array<QList<QPointF>, CURRENT_CHANNEL_COUNT> currentPoints;
             std::array<QList<QPointF>, CURRENT_CHANNEL_COUNT> filterPoints;
-            QList<QPointF> rpmPoints;
             double currentMinY = std::numeric_limits<double>::max();
             double currentMaxY = std::numeric_limits<double>::lowest();
-            double rpmMinY = std::numeric_limits<double>::max();
-            double rpmMaxY = std::numeric_limits<double>::lowest();
             auto drawChannel = [&](QList<QPointF>& points, auto getValue) {
                 if (!visibleCount) return;
                 points.reserve(static_cast<qsizetype>(
@@ -1472,18 +1402,6 @@ MainWindow::MainWindow(
                     filterSeries[ch]->replace(filterPoints[ch]);
                 }
             }
-            drawChannel(rpmPoints, [](const DataFrame& f) {
-                return static_cast<double>(f.rpm); });
-            for (const auto& pt : rpmPoints) {
-                rpmMinY = std::min(rpmMinY, pt.y());
-                rpmMaxY = std::max(rpmMaxY, pt.y());
-            }
-            rpmSeries->replace(rpmPoints);
-            // Avoid a redundant axis change notification and chart relayout.
-            if (rpmAxisX->min() != -DISPLAY_SECONDS || rpmAxisX->max() != 0.0) {
-                rpmAxisX->setRange(-DISPLAY_SECONDS, 0.0);
-            }
-
             // =================================================
             // Automatic ADC / FIR Y axis
             //
@@ -1523,40 +1441,6 @@ MainWindow::MainWindow(
             }
 
 
-            // =================================================
-            // Automatic RPM Y axis
-            // =================================================
-
-            if (rpmMinY <= rpmMaxY)
-            {
-                double range =
-                    rpmMaxY -
-                    rpmMinY;
-
-
-                if (range < 100.0) {
-                    range = 100.0;
-                }
-
-
-                const double margin =
-                    range * 0.10;
-
-
-                const double center =
-                    (rpmMinY +
-                     rpmMaxY)
-                    / 2.0;
-
-
-                const double desiredMin = center - range / 2.0 - margin;
-                const double desiredMax = center + range / 2.0 + margin;
-                const double tolerance = (desiredMax - desiredMin) * 0.001;
-                if (std::abs(rpmAxisY->min() - desiredMin) > tolerance ||
-                    std::abs(rpmAxisY->max() - desiredMax) > tolerance) {
-                    rpmAxisY->setRange(desiredMin, desiredMax);
-                }
-            }
         });
 
 
@@ -1671,29 +1555,6 @@ MainWindow::MainWindow(
                         displayUpdates));
 
 
-            // =================================================
-            // Debug newest sample once per second
-            // =================================================
-
-            if (!dataCache.empty())
-            {
-                const DataFrame &frame =
-                    dataCache.at(
-                        dataCache.size() - 1);
-
-
-                qDebug()
-                    << "I1 ="
-                    << frame.currents[0]
-
-                    << "I2 ="
-                    << frame.currents[1]
-
-                    << "I3 ="
-                    << frame.currents[2];
-            }
-
-
             receivedBytes =
                 0;
 
@@ -1729,25 +1590,13 @@ MainWindow::MainWindow(
 // =============================================================
 void MainWindow::openLutManager()
 {
-    auto openBrowser = [this]() {
-        LutRemoteBrowser dialog(this);
-        dialog.setActiveLutName(currentFpgaLutLabel ? currentFpgaLutLabel->property("activeLutFileName").toString() : QString());
-        connect(&dialog, &LutRemoteBrowser::activeLutChanged,
-                this, &MainWindow::setCurrentFpgaLutName);
-        dialog.exec();
-    };
-
-    // Pause only the real-time TCP data stream during SSH/SCP operations.
-    // The motor control socket remains connected; no STOP command is sent.
-    if (dataSocket->state() != QAbstractSocket::UnconnectedState) {
-        connect(dataSocket, &QTcpSocket::disconnected,
-                this, openBrowser, Qt::SingleShotConnection);
-        ui->connectSwitch->setChecked(false);
-        disconnectDataStream();
-    } else {
-        ui->connectSwitch->setChecked(false);
-        openBrowser();
-    }
+    LutRemoteBrowser dialog(this);
+    dialog.setActiveLutName(currentFpgaLutLabel
+                                ? currentFpgaLutLabel->property("activeLutFileName").toString()
+                                : QString());
+    connect(&dialog, &LutRemoteBrowser::activeLutChanged,
+            this, &MainWindow::setCurrentFpgaLutName);
+    dialog.exec();
 }
 
 void MainWindow::setCurrentFpgaLutName(const QString &fileName)
